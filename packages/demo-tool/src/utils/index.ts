@@ -144,9 +144,9 @@ export const testObjectToProcessedRow = (obj: Partial<ITestData>): Array<Row> =>
 }
 
 export const writeTestToCSV = (test: Partial<ITestData>) => {
-  const ws_raw = createWriteStream(`raw_${test.participant_id}_${test.domain}_${test.condition}.csv`);
+  const ws_raw = createWriteStream(`./data/raw_${test.participant_id}_${test.domain}_${test.condition}.csv`);
   fastcsv.write(testObjectToRawRow(test), { headers: true }).pipe(ws_raw)
 
-  const ws_processed = createWriteStream(`processed_${test.participant_id}_${test.domain}_${test.condition}.csv`);
+  const ws_processed = createWriteStream(`./data/processed_${test.participant_id}_${test.domain}_${test.condition}.csv`);
   fastcsv.write(testObjectToProcessedRow(test), { headers: true }).pipe(ws_processed)
 }
