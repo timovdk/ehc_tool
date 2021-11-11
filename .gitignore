@@ -1,0 +1,10 @@
+db
+node_modules
+dist
+public
+uploads
+~*
+yarn.lock
+packages/gui/.env.prod
+packages/server/dbold/
+*.7z

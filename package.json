@@ -1,0 +1,15 @@
+{
+  "name": "ehc-tool",
+  "version": "0.0.1",
+  "description": "Eye Hand Coordination test tool",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "Timo van der Kuil <timo.vanderkuil@tno.nl> (http://www.tno.nl)",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

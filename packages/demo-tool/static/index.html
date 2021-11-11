@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <title>EHC Test Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.js"></script>
+    <script type="text/javascript" src="https://cdn.socket.io/socket.io-3.0.5.js"></script>
+    <script src="https://unpkg.com/vue-select@latest"></script>
+<link rel="stylesheet" href="https://unpkg.com/vue-select@latest/dist/vue-select.css">
+</head>
+<body>
+    <div id="app" class="container">
+            <div class="row">
+                <div class="col-md-6 offset-md-3 col-sm-12">
+                    <h1 class="text-center">{{ title }}</h1>
+                    <br>
+                    <div id="status"><h4 class="text-center">{{ status }}</h4></div>
+                    <div id="roles">
+                        <button id="rls" class="btn" @click.prevent="setRoles">Send Roles</button>
+                    </div>
+                    <br>
+                    <div id="testInfo">
+                        <span>Participant ID</span>
+                        <input type="text" v-model="participant_id" id="part-id" class="form-control" placeholder="i.e. PP001">
+                        <span>Condition</span>
+                        <v-select v-model="condition" :options="['Baseline', 'Reference', 'XR-HMSD']"></v-select>
+                        <span>Domain</span>
+                        <v-select v-model="domain" :options="['Air', 'Land', 'Maritime Motion', 'Maritime Static']"></v-select>
+                    </div>
+                    <br>
+                    <div id="startTest">
+                        <button id="send" class="btn" @click.prevent="startTest">Start Test</button>
+                    </div>
+                    <br>
+                    <div id="stopTest">
+                        <button id="stop" class="btn" @click.prevent="stopTest">Stop Test</button>
+                    </div>
+                    <br>
+                    <div id="resetTest">
+                        <button id="reset" class="btn" @click.prevent="resetTest">Reset Test</button>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
