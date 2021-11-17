@@ -51,11 +51,18 @@ export enum ScreenRoles {
     UNKOWN = 'UNKNOWN'
 }
 
+/** Enum for the three statuses we use */
+export enum status {
+    OK = 'OK',
+    FAIL = 'FAIL',
+    STOP = 'STOP'
+}
+
 export interface ILogRawRow {
     /** participant ID (PP001, 002 ...) */
     participant_id: string,
     /** Status of this button press */
-    button_status: 'OK' | 'FAIL' | 'STOP',
+    button_status: status,
     /** Condition of the test (Baseline, Reference, XR-HMSD) */
     condition: string,
     /** Domain of the test (Air, Land, Maritime_motion, Maritime_static) */
@@ -86,7 +93,7 @@ export interface ILogProcessedRow {
     /** participant ID (PP001, 002 ...) */
     participant_id: string,
     /** Status of this stimulus */
-    stimulus_status: 'OK' | 'FAIL' | 'STOP',
+    stimulus_status: status,
     /** Stimuli number (s01, 02 ...) */
     stimulus_id: string,
     /** Duration of this stimulus */
