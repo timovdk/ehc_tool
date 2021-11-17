@@ -5,7 +5,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { IStimulus, ITestData, IButton } from 'ehc-models-utils';
+import { IStimulus, ITestData, IButton, IStimulusStart } from 'ehc-models-utils';
 import { shuffle, getPositions, prepareMessage, formatNumber, writeTestToCSV } from 'src/utils';
 
 @WebSocketGateway({ cors: { origin: true } })
@@ -14,12 +14,13 @@ export class EventsGateway {
   server: Server;
 
   private letterList = ['A', 'B', 'C', 'D'] as Array<string>
-  private message_near;
-  private message_far;
+  private message_near: Array<IStimulusStart>;
+  private message_far: Array<IStimulusStart>;
   private run = 1;
   private block = true;
   private current_test: Partial<ITestData>;
   private stimuli = new Array<Partial<IStimulus>>(20);
+  private receivedButtons = 0;
 
   async handleConnection(client: Socket) {
     console.log('Connected: ' + client);
@@ -69,15 +70,15 @@ export class EventsGateway {
 
   @SubscribeMessage('startTest')
   startTest() {
-    // TODO: Shuffle buttons (make a list of seeds to carry out the same test multiple times!)
-    this.letterList = shuffle(this.letterList)
+    // Shuffle buttons
+    this.letterList = shuffle(['A', 'B', 'C', 'D'] as Array<string>, this.run)
 
     // Prepare both messages
-    this.message_near = prepareMessage(getPositions(1920, 1080, 190, 190), this.letterList[0], this.letterList[1])
-    this.message_far = prepareMessage(getPositions(1920, 1080, 190, 190), this.letterList[2], this.letterList[3])
+    this.message_near = prepareMessage(getPositions(1920, 1080, 190, 190, this.run, 'NEAR'), this.letterList[0], this.letterList[1])
+    this.message_far = prepareMessage(getPositions(1920, 1080, 190, 190, this.run, 'FAR'), this.letterList[2], this.letterList[3])
 
     // Emit that server is ready to start the test
-    this.server.emit('playSounds')
+    this.server.emit('playSounds', this.run)
     // Remove the block
     this.block = false;
   }
@@ -94,6 +95,16 @@ export class EventsGateway {
         start_time: new Date().toISOString(),
         stimulus_id: `S${formatNumber(this.run, 2)}`,
       } as Partial<IStimulus>
+
+      // Reset received buttons
+      this.receivedButtons = 0
+
+      // If there are not 4 buttons received within 5 seconds, send button time out message to time out this test.
+      setTimeout(() => {
+        if(this.receivedButtons !== 4){
+          this.server.emit('buttonTimeOut')
+        }
+      }, 5000)
     }
   }
 
@@ -106,6 +117,7 @@ export class EventsGateway {
       console.log('First set of buttons')
       currentStimulus.buttons = data;
       this.stimuli[this.run-1] = currentStimulus;
+      this.receivedButtons+=2
     }
     // If second set of buttons, add to list and run test again if necessary
     else if (currentStimulus.buttons && currentStimulus.buttons.length === 2) {
@@ -113,6 +125,7 @@ export class EventsGateway {
       currentStimulus.buttons.push(...data);
       currentStimulus.end_time = new Date().toISOString();
       this.stimuli[this.run-1] = currentStimulus;
+      this.receivedButtons+=2
 
       // Run again if not last run and not blocked
       // else, abort or end the test
@@ -124,11 +137,13 @@ export class EventsGateway {
         this.server.emit('testAborted')
         this.current_test.stimuli = this.stimuli
         writeTestToCSV(this.current_test)
+        this.run = 1;
       }
       else {
-        this.server.emit('testDone', this.run)
+        this.server.emit('testDone')
         this.current_test.stimuli = this.stimuli
         writeTestToCSV(this.current_test)
+        this.run = 1;
       }
     }   
   }
@@ -136,13 +151,17 @@ export class EventsGateway {
   @SubscribeMessage('stopTest')
   stopTest() {
     this.block = true;
-    this.server.emit('testAborted')
+    this.server.emit('testStopped')
   }
 
   @SubscribeMessage('resetTest')
   resetTest() {
+    console.log('Reset')
     this.run = 1;
     this.block = true;
-    this.server.emit('testAborted')
+    this.receivedButtons = 0;
+    this.current_test = {} as Partial<ITestData>;
+    this.stimuli = new Array<Partial<IStimulus>>(20);
+    this.server.emit('testReset')
   }
 }

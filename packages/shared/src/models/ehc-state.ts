@@ -54,6 +54,8 @@ export enum ScreenRoles {
 export interface ILogRawRow {
     /** participant ID (PP001, 002 ...) */
     participant_id: string,
+    /** Status of this button press */
+    button_status: 'OK' | 'FAIL' | 'STOP',
     /** Condition of the test (Baseline, Reference, XR-HMSD) */
     condition: string,
     /** Domain of the test (Air, Land, Maritime_motion, Maritime_static) */
@@ -83,6 +85,8 @@ export interface ILogRawRow {
 export interface ILogProcessedRow {
     /** participant ID (PP001, 002 ...) */
     participant_id: string,
+    /** Status of this stimulus */
+    stimulus_status: 'OK' | 'FAIL' | 'STOP',
     /** Stimuli number (s01, 02 ...) */
     stimulus_id: string,
     /** Duration of this stimulus */

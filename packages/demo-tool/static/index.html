@@ -20,7 +20,7 @@
                     <br>
                     <div id="status"><h4 class="text-center">{{ status }}</h4></div>
                     <div id="roles">
-                        <button id="rls" class="btn" @click.prevent="setRoles">Send Roles</button>
+                        <button :disabled="rolesSet === true" id="rls" class="btn" @click.prevent="setRoles">Send Roles</button>
                     </div>
                     <br>
                     <div id="testInfo">
@@ -33,11 +33,11 @@
                     </div>
                     <br>
                     <div id="startTest">
-                        <button id="send" class="btn" @click.prevent="startTest">Start Test</button>
+                        <button :disabled="(stop === true && reset === false) || run === true || rolesSet === false" id="send" class="btn" @click.prevent="startTest">Start Test</button>
                     </div>
                     <br>
                     <div id="stopTest">
-                        <button id="stop" class="btn" @click.prevent="stopTest">Stop Test</button>
+                        <button :disabled="stop === true || run === false" id="stop" class="btn" @click.prevent="stopTest">Stop Test</button>
                     </div>
                     <br>
                     <div id="resetTest">
