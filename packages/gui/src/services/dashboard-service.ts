@@ -4,7 +4,7 @@ import { actions, states } from './meiosis';
 import { HomePage } from '../components';
 
 export enum Dashboards {
-  HOME = 'HOME'
+  HOME = 'HOME',
 }
 
 class DashboardService {
@@ -25,10 +25,9 @@ class DashboardService {
 
   public routingTable() {
     return this.dashboards.reduce((p, c) => {
-      p[c.route] =
-      {
+      p[c.route] = {
         render: () => m(c.component, { state: states(), actions: actions }),
-      }
+      };
       return p;
     }, {} as RouteDefs);
   }

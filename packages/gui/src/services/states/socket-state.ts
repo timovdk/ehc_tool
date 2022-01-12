@@ -6,7 +6,7 @@ import { IButton } from 'ehc-models-utils';
 /** Socket Service state */
 
 export interface ISocketStateModel {
-  socket: SocketService
+  socket: SocketService;
 }
 
 export interface ISocketStateActions {
@@ -20,14 +20,14 @@ export interface ISocketState {
 
 export const socketState = {
   initial: {
-    socket: {}
+    socket: {},
   },
   actions: (us: UpdateStream, states: Stream<IAppModel>) => {
     return {
       sendTiming: () => {
-        states().socket.sendTimedButtons(states().buttons_timed)
-        us({ buttons_timed: new Array<IButton>() })
-      }
+        states().socket.sendTimedButtons(states().buttons_timed);
+        us({ buttons_timed: new Array<IButton>() });
+      },
     };
   },
 } as ISocketState;

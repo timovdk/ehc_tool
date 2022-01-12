@@ -3,9 +3,7 @@
  * Source: https://github.com/fuzetsu/mergerino
  */
 
-export const assign =
-  Object.assign ||
-  ((a: any, b: any) => (b && Object.keys(b).forEach(k => (a[k] = b[k])), a));
+export const assign = Object.assign || ((a: any, b: any) => (b && Object.keys(b).forEach((k) => (a[k] = b[k])), a));
 
 const run = (isArr: boolean, copy: any, patch: any) => {
   const type = typeof patch;
@@ -21,11 +19,7 @@ const run = (isArr: boolean, copy: any, patch: any) => {
           copy[k] = val(copy[k], merge);
         } else if (val === undefined) {
           isArr && !isNaN(+k) ? copy.splice(k, 1) : delete copy[k];
-        } else if (
-          val === null ||
-          typeof val !== 'object' ||
-          Array.isArray(val)
-        ) {
+        } else if (val === null || typeof val !== 'object' || Array.isArray(val)) {
           copy[k] = val;
         } else if (typeof copy[k] === 'object') {
           copy[k] = val === copy[k] ? val : merge(copy[k], val);
@@ -55,9 +49,5 @@ export type ValueOf<U> = U[keyof U];
  */
 export const merge = <T extends {}, U>(source: T | T[], ...patches: U[]) => {
   const isArr = Array.isArray(source);
-  return run(
-    isArr,
-    isArr ? (source as T[]).slice() : assign({}, source),
-    patches
-  );
+  return run(isArr, isArr ? (source as T[]).slice() : assign({}, source), patches);
 };

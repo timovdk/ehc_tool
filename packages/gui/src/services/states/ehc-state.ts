@@ -5,10 +5,10 @@ import { IButton, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
 /** EHC Service state */
 
 export interface IEHCStateModel {
-  screenRole: ScreenRoles
-  testRunning: boolean
-  buttons: Array<IStimulusStart>
-  buttons_timed: Array<IButton>
+  screenRole: ScreenRoles;
+  testRunning: boolean;
+  buttons: Array<IStimulusStart>;
+  buttons_timed: Array<IButton>;
 }
 
 export interface IEHCStateActions {
@@ -24,7 +24,7 @@ export const ehcState = {
   initial: {
     screenRole: ScreenRoles.UNKOWN,
     testRunning: false,
-    buttons_timed: new Array<IButton>()
+    buttons_timed: new Array<IButton>(),
   },
   actions: (us: UpdateStream, states: Stream<IAppModel>) => {
     return {
@@ -37,11 +37,11 @@ export const ehcState = {
               button_middle: [button.left + 95, button.top + 95],
               touch_location: [x, y],
               touch_time: new Date().toISOString(),
-            })
+            });
             return btList;
-          }
-        })
-      }
+          },
+        });
+      },
     };
   },
 } as IEHCState;

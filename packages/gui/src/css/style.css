@@ -1,47 +1,49 @@
-html { background-color: #5a5a5a; }
+html {
+  background-color: #5a5a5a;
+}
 
 .centerText {
-    position: absolute;
-    left: 50%;
-    top: 50%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
 }
 
 .bg-button-clicked {
-    background-color: #3c3c3c;
+  background-color: #3c3c3c;
 }
 
 .ehc-button {
-    width: 189px !important;
-    height: 189px !important;
-    background-color: #5a5a5a;
-    text-align: center;
-    display:table-cell;
-    vertical-align:middle;
-    border: none;
-    box-shadow: none;
+  width: 189px !important;
+  height: 189px !important;
+  background-color: #5a5a5a;
+  text-align: center;
+  display: table-cell;
+  vertical-align: middle;
+  border: none;
+  box-shadow: none;
 }
 
 .ehc-button:hover {
-    background-color: #3c3c3c;
+  background-color: #3c3c3c;
 }
 .ehc-button:focus {
-    background-color: #3c3c3c;
+  background-color: #3c3c3c;
 }
 
 .ehc-div-parent {
-    position: fixed;
+  position: fixed;
 }
 
 .ehc-div {
-    margin-left: 64px;
-    width: 30px !important;
-    height: 30px !important;
-    border: 1px solid #000000;
-    text-align: center;
+  margin-left: 64px;
+  width: 30px !important;
+  height: 30px !important;
+  border: 1px solid #000000;
+  text-align: center;
 }
 
 .ehc-span {
-    line-height: 30px;
-    font-size: 25px;
-    color: #000000;
+  line-height: 30px;
+  font-size: 25px;
+  color: #000000;
 }

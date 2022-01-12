@@ -14,7 +14,12 @@
   "author": "Timo van der Kuil <timo_kuil@hotmail.com> (http://www.tno.nl)",
   "license": "MIT",
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.9.0",
+    "@typescript-eslint/parser": "^5.9.0",
+    "eslint": "^8.6.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
-    "typescript": "^4.4.4"
+    "typescript": "^4.5.4"
   }
 }
