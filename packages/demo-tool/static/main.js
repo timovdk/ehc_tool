@@ -1,5 +1,8 @@
 Vue.component('v-select', VueSelect.VueSelect);
 
+const EHC_SERVER = 'http://localhost:3000';
+const UNITY_SERVER = 'http://localhost:3000/ehc';
+
 const app = new Vue({
   el: '#app',
   data: {
@@ -11,6 +14,7 @@ const app = new Vue({
     run: false,
     rolesSet: false,
     waitForConfirmation: false,
+    unitySocket: null,
   },
   methods: {
     setRoles() {
@@ -19,6 +23,13 @@ const app = new Vue({
       this.socket.emit('setRole');
     },
     startTest() {
+      if(this.waitForConfirmation) {
+        this.unitySocket = io(UNITY_SERVER);
+        // Forward the unity stimulusEvent to internal server
+        this.unitySocket.on('StimulusEvent', (event) => {
+          this.socket.emit('AttentionEvent', event);
+        });
+      }
       this.run = true;
       this.status = 'Test is running';
       const message = {
@@ -42,11 +53,17 @@ const app = new Vue({
       this.socket.emit('resetTest');
     },
     triggerConfirmation() {
-      this.socket.emit('pcConfirmation');
+      this.socket.emit('StimulusEvent', {stimuli: 'left'});
+    },
+    toggleUnitySocket(checked) {
+      // If not checked, reset this socket to not produce connection errors
+      if (!checked) {
+        this.unitySocket.close();
+      }
     },
   },
   created() {
-    this.socket = io('http://localhost:3000', { extraHeaders: { 'type-of-client': 'admin' } });
+    this.socket = io(EHC_SERVER, { extraHeaders: { 'type-of-client': 'admin' } });
     this.socket.on('playSounds', (index) => {
       this.status = 'Stimulus ' + index.toString() + ' is running';
       if (this.run) {

@@ -1,4 +1,4 @@
-import { IButton, ILogProcessedRow, ILogRawRow, IStimulus, IStimulusStart, ITestData } from 'ehc-models-utils';
+import { IAttentionButton, IAttentionTest, IButton, ILogProcessedRow, ILogRawRow, IStimulus, IStimulusStart, ITestData, status } from 'ehc-models-utils';
 import { createWriteStream } from 'fs';
 import * as fastcsv from 'fast-csv';
 import { Row } from '@fast-csv/format';
@@ -194,6 +194,17 @@ export const testObjectToProcessedRow = (obj: Partial<ITestData>): Array<Row> =>
   return rows;
 };
 
+export const attentionToRow = (obj: IAttentionButton, start_time: string): Array<Row> => {
+  let rows: Array<Row> = [];
+    rows.push({
+    correct: true, 
+    button_middle: obj.button_middle,
+    touch_location: obj.touch_location,
+    reaction_time: getDelta(start_time, obj.touch_time)
+    } as IAttentionTest);
+  return rows;
+}
+
 export const writeTestToCSV = (test: Partial<ITestData>) => {
   const ws_raw = createWriteStream(`./data/raw_${test.participant_id}_${test.domain}_${test.condition}.csv`);
   fastcsv.write(testObjectToRawRow(test), { headers: true }).pipe(ws_raw);
@@ -203,3 +214,8 @@ export const writeTestToCSV = (test: Partial<ITestData>) => {
   );
   fastcsv.write(testObjectToProcessedRow(test), { headers: true }).pipe(ws_processed);
 };
+
+export const writeConfirmationToCSV = (button: IAttentionButton, test: Partial<ITestData>) => {
+  const ws_attention = createWriteStream(`./data/attention_${test.participant_id}_${test.domain}_${test.condition}.csv`);
+  fastcsv.write(attentionToRow(button, test.start_time), { headers: true }).pipe(ws_attention);
+}

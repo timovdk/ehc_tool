@@ -1,7 +1,7 @@
 import { IAppModel, UpdateStream } from '../meiosis';
 import Stream from 'mithril/stream';
 import { SocketService } from '../socket-service';
-import { IButton } from 'ehc-models-utils';
+import { IButton, IAttentionButton } from 'ehc-models-utils';
 
 /** Socket Service state */
 
@@ -11,6 +11,7 @@ export interface ISocketStateModel {
 
 export interface ISocketStateActions {
   sendTiming: () => void;
+  sendAttention: () => void;
 }
 
 export interface ISocketState {
@@ -28,6 +29,10 @@ export const socketState = {
         states().socket.sendTimedButtons(states().buttons_timed);
         us({ buttons_timed: new Array<IButton>() });
       },
+      sendAttention: () => {
+        states().socket.sendAttentionTestButtons(states().attentionButton);
+        us({ attentionButtons: {} as IAttentionButton });
+      }
     };
   },
 } as ISocketState;

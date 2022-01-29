@@ -6,8 +6,8 @@ let clickedButtons = 0;
 
 export const HomePage: MeiosisComponent = () => ({
   view: (vnode) => {
-    const { screenRole, testRunning, buttons } = vnode.attrs.state;
-    const { updateTiming, sendTiming } = vnode.attrs.actions;
+    const { screenRole, testRunning, buttons, attentionTestRunning } = vnode.attrs.state;
+    const { updateTiming, sendTiming, attentionButtonClicked, sendAttention } = vnode.attrs.actions;
 
     return testRunning
       ? buttons.map((s: IStimulusStart, index: number) => {
@@ -37,6 +37,28 @@ export const HomePage: MeiosisComponent = () => ({
             )
           );
         })
+      : attentionTestRunning
+      ? m(
+          `div.ehc-div-parent#button-attention`,
+          {
+            style: {
+              top: '445px',
+              left: '865px',
+            },
+          },
+          m(
+            `.btn.attention-button`,
+            {
+              onclick: (e: PointerEvent) => {
+                attentionButtonClicked(e.x, e.y);
+                sendAttention();
+                let btn = document.getElementById(`button-attention`);
+                btn ? (btn.style.visibility = 'hidden') : undefined;
+              },
+            },
+            m('div', m('span.ehc-span', screenRole === 'NEAR' ? 'LEFT' : 'RIGHT'))
+          )
+        )
       : m('.centerText', screenRole);
   },
 });

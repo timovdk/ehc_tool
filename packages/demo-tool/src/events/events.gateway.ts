@@ -1,7 +1,15 @@
 import { MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { IStimulus, ITestData, IButton, IStimulusStart } from 'ehc-models-utils';
-import { shuffle, getPositions, prepareMessage, formatNumber, writeTestToCSV } from 'src/utils';
+import {
+  IStimulus,
+  ITestData,
+  IButton,
+  IStimulusStart,
+  IStimulusEvent,
+  IAttentionTest,
+  IAttentionButton,
+} from 'ehc-models-utils';
+import { shuffle, getPositions, prepareMessage, formatNumber, writeTestToCSV, writeConfirmationToCSV } from 'src/utils';
 
 @WebSocketGateway({ cors: { origin: true } })
 export class EventsGateway {
@@ -17,6 +25,8 @@ export class EventsGateway {
   private stimuli = new Array<Partial<IStimulus>>(20);
   private receivedButtons = 0;
   private wait_for_conf = false;
+
+  private attentionEvent: string;
 
   async handleConnection(client: Socket) {
     console.log('Connected: ' + client);
@@ -38,7 +48,7 @@ export class EventsGateway {
   @SubscribeMessage('setTestData')
   setTestData(@MessageBody() data: Partial<ITestData>) {
     this.current_test = data;
-    data.wait_for_confirmation ? this.wait_for_conf = data.wait_for_confirmation : undefined;
+    data.wait_for_confirmation ? (this.wait_for_conf = data.wait_for_confirmation) : undefined;
 
     // Log the start time
     this.current_test.start_time = new Date().toISOString();
@@ -131,12 +141,6 @@ export class EventsGateway {
     }
   }
 
-  @SubscribeMessage('pcConfirmation')
-  setConf() {
-    // There is probably some logging going on here, depends on Robbert
-    this.server.emit('playSounds', this.run);
-  }
-
   @SubscribeMessage('stopTest')
   stopTest() {
     this.block = true;
@@ -154,6 +158,31 @@ export class EventsGateway {
     this.letterList = ['A', 'B', 'C', 'D'] as Array<string>;
     this.message_near = [] as Array<IStimulusStart>;
     this.message_far = [] as Array<IStimulusStart>;
+    this.attentionEvent = '';
     this.server.emit('testReset');
-  }  
+  }
+
+  @SubscribeMessage('AttentionEvent')
+  runStimulusEvent(@MessageBody() attEv: IStimulusEvent) {
+    console.log('run');
+    this.attentionEvent = attEv.stimuli;
+    this.server.to('NEAR').emit('attentionTest');
+    this.server.to('FAR').emit('attentionTest');
+  }
+
+  @SubscribeMessage('attentionTestPressed')
+  handleAttentionButtons(@MessageBody() data: IAttentionButton) {
+    this.server.emit('stopAttentionTest');
+    if (
+      (data.button_screen === 'N' && this.attentionEvent === 'left') ||
+      (data.button_screen === 'F' && this.attentionEvent === 'right')
+    ) {
+      writeConfirmationToCSV(data, this.current_test);
+      // Start the actual test
+      this.wait_for_conf = false;
+      this.server.emit('playSounds', this.run);
+    } else {
+      console.log('Attention Test Wrong!')
+    }
+  }
 }

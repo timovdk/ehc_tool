@@ -47,3 +47,21 @@ html {
   font-size: 25px;
   color: #000000;
 }
+
+.attention-button {
+  width: 189px !important;
+  height: 189px !important;
+  background-color: #5a5a5a;
+  text-align: center;
+  display: table-cell;
+  vertical-align: middle;
+  border: 1px solid #000000;
+  box-shadow: none;
+}
+
+.attention-button:hover {
+  background-color: #3c3c3c;
+}
+.attention-button:focus {
+  background-color: #3c3c3c;
+}

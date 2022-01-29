@@ -1,3 +1,0 @@
-participant_id,stimulus_status,stimulus_id,stimulus_duration,touch_order_correct,touch_order,touch_precisions,touch_time_deltas
-PP001,FAIL,S01,5007,false,"A,C,D,B","646.6714776453342,1246.1111507405749,904.4003538256716,1516.0227570851303","NaN,NaN,NaN,NaN"
-PP001,FAIL,S02,5005,false,"B,C,D,A","619.6789491341464,1511.9219556577648,599.3680004805061,1325.239978268087","NaN,NaN,NaN,NaN"

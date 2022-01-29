@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { IButton, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
+import { IAttentionButton, IButton, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
 import { UpdateStream } from './meiosis';
 import { states } from '.';
 
@@ -25,8 +25,10 @@ export class SocketService {
       // First hide the buttons
       let btn_1 = document.getElementById(`button-0`);
       let btn_2 = document.getElementById(`button-1`);
+      let btn_3 = document.getElementById(`button-attention`);
       btn_1 ? (btn_1.style.visibility = 'hidden') : undefined;
       btn_2 ? (btn_2.style.visibility = 'hidden') : undefined;
+      btn_3 ? (btn_3.style.visibility = 'hidden') : undefined;
 
       // Then add the missing buttons to the list
       let btList = states().buttons_timed;
@@ -67,9 +69,17 @@ export class SocketService {
     this.socket.on('testReset', () => {
       let btn_1 = document.getElementById(`button-0`);
       let btn_2 = document.getElementById(`button-1`);
+      let btn_3 = document.getElementById(`button-attention`);
       btn_1 ? (btn_1.style.visibility = 'hidden') : undefined;
       btn_2 ? (btn_2.style.visibility = 'hidden') : undefined;
-      us({ testRunning: false, buttons_timed: new Array<IButton>(), buttons: new Array<IStimulusStart>() });
+      btn_3 ? (btn_3.style.visibility = 'hidden') : undefined;
+      us({
+        testRunning: false,
+        buttons_timed: new Array<IButton>(),
+        buttons: new Array<IStimulusStart>(),
+        attentionButton: {} as IAttentionButton,
+        attentionTestRunning: false,
+      });
     });
 
     this.socket.on('buttonTimeOut', () => {
@@ -115,9 +125,25 @@ export class SocketService {
       this.sendTimedButtons(btList);
       us({ buttons_timed: new Array<IButton>(), buttons: new Array<IStimulusStart>() });
     });
+
+    this.socket.on('attentionTest', () => {
+      let btn_1 = document.getElementById(`button-attention`);
+      btn_1 ? (btn_1.style.visibility = '') : undefined;
+      us({ attentionTestRunning: true });
+    });
+
+    this.socket.on('stopAttentionTest', () => {
+      let btn_1 = document.getElementById(`button-attention`);
+      btn_1 ? (btn_1.style.visibility = 'hidden') : undefined;
+      us({ attentionTestRunning: false, attentionButton: {} as IAttentionButton });
+    });
   }
 
   sendTimedButtons = (buttons: Array<IButton>) => {
     this.socket.emit('buttonsPressed', buttons);
+  };
+
+  sendAttentionTestButtons = (button: IAttentionButton) => {
+    this.socket.emit('attentionTestPressed', button);
   };
 }

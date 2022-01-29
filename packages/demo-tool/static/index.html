@@ -23,8 +23,8 @@
             <button :disabled="rolesSet === true" id="rls" class="btn" @click.prevent="setRoles">Send Roles</button>
           </div>
           <br />
-          <div id="waitForCheck">
-            <input type="checkbox" id="checkbox" v-model="waitForConfirmation" />
+          <div id="connectToUnity">
+            <input type="checkbox" id="unityCheckbox" @change="toggleUnitySocket($event.target.checked)" v-model="waitForConfirmation"/>
             <span>Wait for confirmation</span>
           </div>
           <br />
