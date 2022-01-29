@@ -35,6 +35,8 @@
             <v-select v-model="condition" :options="['Baseline', 'Reference', 'XR-HMSD']"></v-select>
             <span>Domain</span>
             <v-select v-model="domain" :options="['Air', 'Land', 'Maritime Motion', 'Maritime Static']"></v-select>
+            <span>Number of Stimuli</span>
+            <input type="number" v-model="run_count" id="run_cnt-id" class="form-control" placeholder="i.e. 10" />
           </div>
           <br />
           <div id="startTest">

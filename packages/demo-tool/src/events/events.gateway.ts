@@ -6,7 +6,6 @@ import {
   IButton,
   IStimulusStart,
   IStimulusEvent,
-  IAttentionTest,
   IAttentionButton,
 } from 'ehc-models-utils';
 import { shuffle, getPositions, prepareMessage, formatNumber, writeTestToCSV, writeConfirmationToCSV } from 'src/utils';
@@ -16,16 +15,16 @@ export class EventsGateway {
   @WebSocketServer()
   server: Server;
 
-  private letterList = ['A', 'B', 'C', 'D'] as Array<string>;
+  private letter_list = ['A', 'B', 'C', 'D'] as Array<string>;
   private message_near: Array<IStimulusStart>;
   private message_far: Array<IStimulusStart>;
   private run = 1;
+  private run_count = 10;
   private block = true;
   private current_test: Partial<ITestData>;
   private stimuli = new Array<Partial<IStimulus>>(20);
-  private receivedButtons = 0;
+  private received_buttons = 0;
   private wait_for_conf = false;
-
   private attentionEvent: string;
 
   async handleConnection(client: Socket) {
@@ -47,6 +46,7 @@ export class EventsGateway {
 
   @SubscribeMessage('setTestData')
   setTestData(@MessageBody() data: Partial<ITestData>) {
+    this.run_count = data.run_count;
     this.current_test = data;
     data.wait_for_confirmation ? (this.wait_for_conf = data.wait_for_confirmation) : undefined;
 
@@ -57,18 +57,18 @@ export class EventsGateway {
   @SubscribeMessage('startTest')
   startTest() {
     // Shuffle buttons
-    this.letterList = shuffle(['A', 'B', 'C', 'D'] as Array<string>, this.run);
+    this.letter_list = shuffle(['A', 'B', 'C', 'D'] as Array<string>, this.run);
 
     // Prepare both messages
     this.message_near = prepareMessage(
       getPositions(1920, 1080, 190, 190, this.run, 'NEAR'),
-      this.letterList[0],
-      this.letterList[1]
+      this.letter_list[0],
+      this.letter_list[1]
     );
     this.message_far = prepareMessage(
       getPositions(1920, 1080, 190, 190, this.run, 'FAR'),
-      this.letterList[2],
-      this.letterList[3]
+      this.letter_list[2],
+      this.letter_list[3]
     );
 
     // Emit that server is ready to start the test and we do not have to wait for confirmation
@@ -93,11 +93,11 @@ export class EventsGateway {
       } as Partial<IStimulus>;
 
       // Reset received buttons
-      this.receivedButtons = 0;
+      this.received_buttons = 0;
 
       // If there are not 4 buttons received within 5 seconds, send button time out message to time out this test.
       setTimeout(() => {
-        if (this.receivedButtons !== 4) {
+        if (this.received_buttons !== 4) {
           this.server.emit('buttonTimeOut');
         }
       }, 5000);
@@ -113,7 +113,7 @@ export class EventsGateway {
       console.log('First set of buttons');
       currentStimulus.buttons = data;
       this.stimuli[this.run - 1] = currentStimulus;
-      this.receivedButtons += 2;
+      this.received_buttons += 2;
     }
     // If second set of buttons, add to list and run test again if necessary
     else if (currentStimulus.buttons && currentStimulus.buttons.length === 2) {
@@ -121,11 +121,11 @@ export class EventsGateway {
       currentStimulus.buttons.push(...data);
       currentStimulus.end_time = new Date().toISOString();
       this.stimuli[this.run - 1] = currentStimulus;
-      this.receivedButtons += 2;
+      this.received_buttons += 2;
 
       // Run again if not last run and not blocked
       // else, abort or end the test
-      if (this.run < 2 && !this.block) {
+      if (this.run < this.run_count && !this.block) {
         this.run++;
         this.startTest();
       } else if (this.block) {
@@ -150,12 +150,13 @@ export class EventsGateway {
   @SubscribeMessage('resetTest')
   resetTest() {
     this.run = 1;
+    this.run_count = 10;
     this.block = true;
-    this.receivedButtons = 0;
+    this.received_buttons = 0;
     this.current_test = {} as Partial<ITestData>;
     this.stimuli = new Array<Partial<IStimulus>>(20);
     this.wait_for_conf = false;
-    this.letterList = ['A', 'B', 'C', 'D'] as Array<string>;
+    this.letter_list = ['A', 'B', 'C', 'D'] as Array<string>;
     this.message_near = [] as Array<IStimulusStart>;
     this.message_far = [] as Array<IStimulusStart>;
     this.attentionEvent = '';

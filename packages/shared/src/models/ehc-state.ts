@@ -44,6 +44,8 @@ export interface ITestData {
   stimuli: Array<Partial<IStimulus>>;
   /** Flag whether to wait for additional confirmation */
   wait_for_confirmation: boolean;
+  /** Number of stimuli */
+  run_count: number;
 }
 
 /** Enum for the three roles screens can have */

@@ -15,6 +15,7 @@ const app = new Vue({
     rolesSet: false,
     waitForConfirmation: false,
     unitySocket: null,
+    run_count: 10,
   },
   methods: {
     setRoles() {
@@ -37,6 +38,7 @@ const app = new Vue({
         condition: this.condition,
         domain: this.domain,
         wait_for_confirmation: this.waitForConfirmation,
+        run_count: this.run_count,
       };
       this.socket.emit('setTestData', message);
       this.socket.emit('startTest');
@@ -53,7 +55,7 @@ const app = new Vue({
       this.socket.emit('resetTest');
     },
     triggerConfirmation() {
-      this.socket.emit('StimulusEvent', {stimuli: 'left'});
+      this.socket.emit('AttentionEvent', {stimuli: 'left'});
     },
     toggleUnitySocket(checked) {
       // If not checked, reset this socket to not produce connection errors
