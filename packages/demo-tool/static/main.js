@@ -1,7 +1,7 @@
 Vue.component('v-select', VueSelect.VueSelect);
 
 const EHC_SERVER = 'http://localhost:3000';
-const UNITY_SERVER = 'http://localhost:3000/ehc';
+const UNITY_SERVER = 'ws://[IP HERE]:3000/ehc';
 
 const app = new Vue({
   el: '#app',
@@ -25,10 +25,10 @@ const app = new Vue({
     },
     startTest() {
       if(this.waitForConfirmation) {
-        this.unitySocket = io(UNITY_SERVER);
         // Forward the unity stimulusEvent to internal server
-        this.unitySocket.on('StimulusEvent', (event) => {
-          this.socket.emit('AttentionEvent', event);
+        this.unitySocket.addEventListener('message', (event) => {
+          const data = JSON.parse(event.data)
+          this.socket.emit('AttentionEvent', data.stimuli);
         });
       }
       this.run = true;
@@ -61,6 +61,8 @@ const app = new Vue({
       // If not checked, reset this socket to not produce connection errors
       if (!checked) {
         this.unitySocket.close();
+      } else {
+        this.unitySocket = new WebSocket('ws://134.221.73.6:3000/ehc');
       }
     },
   },
@@ -77,7 +79,7 @@ const app = new Vue({
             beep.play();
             this.socket.emit('beepPlayed');
           }
-        }, 20000);
+        }, 6000);
       }
     });
     this.socket.on('testDone', () => {
