@@ -28,7 +28,7 @@ const app = new Vue({
         // Forward the unity stimulusEvent to internal server
         this.unitySocket.addEventListener('message', (event) => {
           const data = JSON.parse(event.data)
-          this.socket.emit('AttentionEvent', data.stimuli);
+          this.socket.emit('AttentionEvent', {stimuli: data.stimuli});
         });
       }
       this.run = true;
