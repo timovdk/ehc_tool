@@ -27,7 +27,7 @@ export const socketState = {
     return {
       sendTiming: () => {
         states().socket.sendTimedButtons(states().buttons_timed);
-        us({ buttons_timed: new Array<IButton>() });
+        us({ buttons_timed: new Array<IButton>(), sendData: true });
       },
       sendAttention: () => {
         states().socket.sendAttentionTestButtons(states().attentionButton);

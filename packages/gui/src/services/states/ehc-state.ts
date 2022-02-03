@@ -11,6 +11,7 @@ export interface IEHCStateModel {
   buttons_timed: Array<IButton>;
   attentionTestRunning: boolean;
   attentionButton: IAttentionButton;
+  sendData: boolean;
 }
 
 export interface IEHCStateActions {
@@ -30,6 +31,7 @@ export const ehcState = {
     buttons_timed: new Array<IButton>(),
     attentionTestRunning: false,
     attentionButton: {} as IAttentionButton,
+    sendData: false,
   },
   actions: (us: UpdateStream, states: Stream<IAppModel>) => {
     return {
