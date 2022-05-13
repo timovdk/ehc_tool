@@ -1,7 +1,7 @@
 import { IAppModel, UpdateStream } from '../meiosis';
 import Stream from 'mithril/stream';
 import { SocketService } from '../socket-service';
-import { IButton, IAttentionButton } from 'ehc-models-utils';
+import { IArrow, IButton, IAttentionButton } from 'ehc-models-utils';
 
 /** Socket Service state */
 
@@ -12,6 +12,8 @@ export interface ISocketStateModel {
 export interface ISocketStateActions {
   sendTiming: () => void;
   sendAttention: () => void;
+  sendAccommodationAttention: () => void;
+  sendAccommodationTest: (dir: string, arrow: IArrow, time_pressed: string) => void;
 }
 
 export interface ISocketState {
@@ -32,6 +34,14 @@ export const socketState = {
       sendAttention: () => {
         states().socket.sendAttentionTestButtons(states().attentionButton);
         us({ attentionButtons: {} as IAttentionButton });
+      },
+      sendAccommodationAttention: () => {
+        states().socket.sendAccommodationAttentionTestButtons(states().attentionButton);
+        us({ attentionButtons: {} as IAttentionButton });
+      },
+      sendAccommodationTest: (dir: string, arrow: IArrow, time_pressed: string) => {
+        states().socket.sendAccommodationTest(dir, arrow, time_pressed);
+        us({ accommodationArrow: {} as IArrow });
       }
     };
   },

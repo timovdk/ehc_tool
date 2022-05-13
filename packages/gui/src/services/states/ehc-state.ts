@@ -1,6 +1,6 @@
 import { IAppModel, UpdateStream } from '../meiosis';
 import Stream from 'mithril/stream';
-import { IAttentionButton, IButton, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
+import { IArrow, IAttentionButton, IButton, IStimulusEvent, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
 
 /** EHC Service state */
 
@@ -12,6 +12,11 @@ export interface IEHCStateModel {
   attentionTestRunning: boolean;
   attentionButton: IAttentionButton;
   sendData: boolean;
+  attentionAccommodationTestRunning: boolean;
+  accommodationTestRunning: boolean;
+  accommodationArrow: IArrow;
+  showBars: boolean;
+  bars: IStimulusEvent;
 }
 
 export interface IEHCStateActions {
@@ -26,12 +31,17 @@ export interface IEHCState {
 
 export const ehcState = {
   initial: {
-    screenRole: ScreenRoles.UNKOWN,
+    screenRole: ScreenRoles.UNKNOWN,
     testRunning: false,
     buttons_timed: new Array<IButton>(),
     attentionTestRunning: false,
     attentionButton: {} as IAttentionButton,
     sendData: false,
+    attentionAccommodationTestRunning: false,
+    accommodationTestRunning: false,
+    accommodationArrow: {} as IArrow,
+    showBars: false,
+    bars: {} as IStimulusEvent,
   },
   actions: (us: UpdateStream, states: Stream<IAppModel>) => {
     return {
@@ -55,6 +65,7 @@ export const ehcState = {
           button_middle: [960, 540],
           touch_location: [x, y],
           touch_time: new Date().toISOString(),
+          pressed: states().screenRole === ScreenRoles.NEAR ? '<' : '>'
         } as IAttentionButton;
         us({ attentionButton: attentionButtonFilled, attentionTestRunning: false });
       },

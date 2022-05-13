@@ -24,8 +24,8 @@
           </div>
           <br />
           <div id="connectToUnity">
-            <input type="checkbox" id="unityCheckbox" @change="toggleUnitySocket($event.target.checked)" v-model="waitForConfirmation"/>
-            <span>Wait for confirmation</span>
+            <input type="checkbox" id="unityCheckbox" @change="toggleUnitySocket($event.target.checked)"/>
+            <span>Connect to Unity</span>
           </div>
           <br />
           <div id="testInfo">
@@ -46,7 +46,18 @@
               class="btn"
               @click.prevent="startTest"
             >
-              Start Test
+              Start Coordination Test
+            </button>
+          </div>
+          <br />
+          <div id="startAccommodation">
+            <button
+              :disabled="(stop === true && reset === false) || run === true || rolesSet === false"
+              id="send"
+              class="btn"
+              @click.prevent="startAccommodation"
+            >
+              Start Accommodation Test
             </button>
           </div>
           <br />
@@ -60,9 +71,6 @@
             <button id="reset" class="btn" @click.prevent="resetTest">Reset Test</button>
           </div>
           <br />
-          <div id="triggConf">
-            <button id="conf" class="btn" @click.prevent="triggerConfirmation">Trigg Conf</button>
-          </div>
         </div>
       </div>
     </div>

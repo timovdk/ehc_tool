@@ -1,14 +1,16 @@
 import { MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { IStimulus, ITestData, IButton, IStimulusStart, IStimulusEvent, IAttentionButton, IAccommodationButton } from 'ehc-models-utils';
 import {
-  IStimulus,
-  ITestData,
-  IButton,
-  IStimulusStart,
-  IStimulusEvent,
-  IAttentionButton,
-} from 'ehc-models-utils';
-import { shuffle, getPositions, prepareMessage, formatNumber, writeTestToCSV, writeConfirmationToCSV } from 'src/utils';
+  shuffle,
+  getPositions,
+  prepareMessage,
+  formatNumber,
+  writeTestToCSV,
+  getAttentionLocation,
+  getBarsLocation,
+  writeAccommodationTestToCSV,
+} from 'src/utils';
 
 @WebSocketGateway({ cors: { origin: true } })
 export class EventsGateway {
@@ -24,9 +26,12 @@ export class EventsGateway {
   private current_test: Partial<ITestData>;
   private stimuli = new Array<Partial<IStimulus>>(20);
   private received_buttons = 0;
-  private wait_for_conf = false;
   private attentionEvent: string;
+  private attentionEvents = new Array<IAttentionButton>();
+  private currentAttentionTime: string;
+  private accommodationEvents = new Array<IAccommodationButton>();
 
+  // Once GUIs connect, they are put in a NEAR and FAR group
   async handleConnection(client: Socket) {
     console.log('Connected: ' + client);
     if (client.handshake.headers['type-of-client'] === 'screen') {
@@ -38,22 +43,24 @@ export class EventsGateway {
     }
   }
 
+  // Once 'set role' button is clicked in demo-tool, the GUIs are activated
   @SubscribeMessage('setRole')
   setRole() {
     this.server.to('NEAR').emit('setScreenRole', 'NEAR');
     this.server.to('FAR').emit('setScreenRole', 'FAR');
   }
 
+  // Data for this test is set
   @SubscribeMessage('setTestData')
   setTestData(@MessageBody() data: Partial<ITestData>) {
     this.run_count = data.run_count;
     this.current_test = data;
-    data.wait_for_confirmation ? (this.wait_for_conf = data.wait_for_confirmation) : undefined;
 
     // Log the start time
     this.current_test.start_time = new Date().toISOString();
   }
 
+  // Test is started
   @SubscribeMessage('startTest')
   startTest() {
     // Shuffle buttons
@@ -71,14 +78,52 @@ export class EventsGateway {
       this.letter_list[3]
     );
 
-    // Emit that server is ready to start the test and we do not have to wait for confirmation
-    // This emit calls the laptop to play the sounds
-    // When sounds have played, the laptop emits a 'beep played' message
-    !this.wait_for_conf ? this.server.emit('playSounds', this.run) : undefined;
-    // Remove the block
+    const attEv = {
+      stimuli: getAttentionLocation(this.run),
+      background: 'target',
+    };
+    // Emit event that tells the demo-tool we are ready to start with the attention test flow
+    this.server.emit('playAttention', { index: this.run, attEv: attEv });
+
     this.block = false;
   }
 
+  // After the instruction is played, send attention buttons to GUI
+  @SubscribeMessage('attentionPlayed')
+  triggerAttention(@MessageBody() attEv: IStimulusEvent) {
+    if (!this.block) {
+      this.attentionEvent = attEv.stimuli;
+      this.server.to('NEAR').emit('attentionTest');
+      this.server.to('FAR').emit('attentionTest');
+      this.currentAttentionTime = new Date().toISOString();
+    }
+  }
+
+  // After an attention button is pressed, emit 'playBeep' to start the coordination flow
+  @SubscribeMessage('attentionTestPressed')
+  handleAttentionButtons(@MessageBody() data: IAttentionButton) {
+    this.server.emit('stopAttentionTest');
+    if (
+      (data.button_screen === 'N' && this.attentionEvent === 'left') ||
+      (data.button_screen === 'F' && this.attentionEvent === 'right')
+    ) {
+      data.start_time = this.currentAttentionTime;
+      data.correct = true;
+      data.id = data.pressed;
+      this.attentionEvents.push(data);
+      // Start the actual test
+      this.server.emit('playBeep', this.run);
+    } else {
+      data.start_time = this.currentAttentionTime;
+      data.correct = false;
+      data.id = data.pressed === '<' ? '>' : '<'; 
+      this.attentionEvents.push(data);
+      console.log('Attention Test Wrong!');
+      this.server.emit('playBeep', this.run);
+    }
+  }
+
+  // Once the beep is played, start the coordination test
   @SubscribeMessage('beepPlayed')
   triggerStimulus() {
     if (!this.block) {
@@ -104,6 +149,9 @@ export class EventsGateway {
     }
   }
 
+  // Each time a coordination button is pressed, this function is ran.
+  // Once all buttons are pressed, they are logged and the test is started again,
+  // or stopped if the number of repetitions is reached.
   @SubscribeMessage('buttonsPressed')
   handleButtons(@MessageBody() data: Array<IButton>) {
     let currentStimulus = this.stimuli[this.run - 1] as IStimulus;
@@ -127,26 +175,30 @@ export class EventsGateway {
       // else, abort or end the test
       if (this.run < this.run_count && !this.block) {
         this.run++;
-        this.startTest();
+        setTimeout(() => {
+          this.startTest();
+        }, 1000);
       } else if (this.block) {
         this.current_test.stimuli = this.stimuli;
-        writeTestToCSV(this.current_test);
+        writeTestToCSV(this.current_test, this.attentionEvents);
         this.run = 1;
       } else {
         this.server.emit('testDone');
         this.current_test.stimuli = this.stimuli;
-        writeTestToCSV(this.current_test);
+        writeTestToCSV(this.current_test, this.attentionEvents);
         this.run = 1;
       }
     }
   }
 
+  // Stop the current test
   @SubscribeMessage('stopTest')
   stopTest() {
     this.block = true;
     this.server.emit('testStopped');
   }
 
+  // Reset all parameters
   @SubscribeMessage('resetTest')
   resetTest() {
     this.run = 1;
@@ -155,35 +207,119 @@ export class EventsGateway {
     this.received_buttons = 0;
     this.current_test = {} as Partial<ITestData>;
     this.stimuli = new Array<Partial<IStimulus>>(20);
-    this.wait_for_conf = false;
     this.letter_list = ['A', 'B', 'C', 'D'] as Array<string>;
     this.message_near = [] as Array<IStimulusStart>;
     this.message_far = [] as Array<IStimulusStart>;
     this.attentionEvent = '';
+    this.attentionEvents = [] as Array<IAttentionButton>;
+    this.accommodationEvents = [] as Array<IAccommodationButton>;
     this.server.emit('testReset');
   }
 
-  @SubscribeMessage('AttentionEvent')
-  runStimulusEvent(@MessageBody() attEv: IStimulusEvent) {
-    console.log('run');
-    this.attentionEvent = attEv.stimuli;
-    this.server.to('NEAR').emit('attentionTest');
-    this.server.to('FAR').emit('attentionTest');
+  /**
+1.	Participant is sitting or kneeling down behind and at the left-hand side of the setup 
+2.	Only at the first trial: The task starts with an audio message “look at the object/symbol outside/farthest away” 
+3.	Only at the first trial: Participant looks at the object in the outside environment for 3 sec to incorporate switching focus between the far- and near visual environments
+4.	Regardless the location (outside world, or touchscreens), a virtual arrow (< or >) is presented and participants must either press the left or right arrow key (e.g., two areas on the nearest touch display), respectively. 
+5.	After the key press, the stimulus disappears and a horizontal line indicates the location of the subsequent target for 200 ms. That is, a horizontal line above indicates that the next target is presented in the outside world, a horizontal line below indicates that the next target is presented on the touch screen nearby, and a horizontal line at the center indicates that the next target appears in between (the furthest touch screen). The time between the target onset and the response must be recorded: target RT.
+6.	Subsequently, participants move their gaze towards the next location.
+7.	Steps 4-6 are repeated for 100 times (cumulating to about 6 min) (The exact number of repetitions should be determined during a pilot experiment) 
+ */
+
+  // Accommodation test is started
+  @SubscribeMessage('startAccommodationTest')
+  startAccommodationTest() {
+    if (this.run === 1) {
+      const attEv = {
+        stimuli: getAttentionLocation(this.run),
+        background: 'target',
+      };
+      // Emit event that tells the demo-tool we are ready to start with the attention test flow
+      this.server.emit('playAccommodationSound', { index: this.run, attEv: attEv });
+      this.block = false;
+    } else {
+      //4.	Regardless the location (outside world, or touchscreens), a virtual arrow (< or >) is presented and participants must either press the left or right arrow key (e.g., two areas on the nearest touch display), respectively.
+      //5.	After the key press, the stimulus disappears and a horizontal line indicates the location of the subsequent target for 200 ms. That is, a horizontal line above indicates that the next target is presented in the outside world, a horizontal line below indicates that the next target is presented on the touch screen nearby, and a horizontal line at the center indicates that the next target appears in between (the furthest touch screen). The time between the target onset and the response must be recorded: target RT.
+      //6.	Subsequently, participants move their gaze towards the next location.
+      this.block = false;
+      this.triggerAccommodation();
+    }
   }
 
-  @SubscribeMessage('attentionTestPressed')
-  handleAttentionButtons(@MessageBody() data: IAttentionButton) {
-    this.server.emit('stopAttentionTest');
+  @SubscribeMessage('accommodationSoundPlayed')
+  triggerAccommodationAttention(@MessageBody() attEv: IStimulusEvent) {
+    if (!this.block) {
+      this.attentionEvent = attEv.stimuli;
+      this.server.to('NEAR').emit('attentionAccommodationTest');
+      this.server.to('FAR').emit('attentionAccommodationTest');
+      this.currentAttentionTime = new Date().toISOString();
+    }
+  }
+
+  // After an attention button is pressed, emit 'playBeep' to start the coordination flow
+  @SubscribeMessage('attentionAccommodationTestPressed')
+  handleAccommodationAttentionButtons(@MessageBody() data: IAttentionButton) {
+    this.server.emit('stopAttentionAccommodationTest');
     if (
       (data.button_screen === 'N' && this.attentionEvent === 'left') ||
       (data.button_screen === 'F' && this.attentionEvent === 'right')
     ) {
-      writeConfirmationToCSV(data, this.current_test);
-      // Start the actual test
-      this.wait_for_conf = false;
-      this.server.emit('playSounds', this.run);
+      data.start_time = this.currentAttentionTime;
+      data.correct = true;
+      this.attentionEvents.push(data);
+      this.run++;
+      this.triggerAccommodation();
     } else {
-      console.log('Attention Test Wrong!')
+      data.start_time = this.currentAttentionTime;
+      data.correct = false;
+      this.attentionEvents.push(data);
+      console.log('Attention Test Wrong!');
+      this.run++;
+      this.triggerAccommodation();
+    }
+  }
+
+  triggerAccommodation() {
+    if (!this.block) {
+      console.log(`Executing run ${formatNumber(this.run, 2)} for participant: ${this.current_test.participant_id}`);
+      const barsLocation = getBarsLocation(this.run);
+      const barsLo = {
+        stimuli: barsLocation,
+        background: 'uniform',
+      };
+
+      const accLo = {
+        stimuli: getAttentionLocation(this.run),
+        background: 'uniform',
+      };
+
+      this.server.emit('barsLocationMessage', barsLo);
+
+      setTimeout(() => {
+        this.currentAttentionTime = new Date().toISOString();
+        this.server.emit('accommodationLocation', accLo)
+      }, 2000);
+    }
+  }
+
+  @SubscribeMessage('accommodationDirectionPressed')
+  handleAccommodationPress(@MessageBody() data: IAccommodationButton) {
+    data.start_time = this.currentAttentionTime;
+
+    this.accommodationEvents.push(data)
+
+    if (this.run < this.run_count && !this.block) {
+      this.run++;
+      setTimeout(() => {
+        this.triggerAccommodation();
+    });
+    } else if (this.block) {
+      writeAccommodationTestToCSV(this.current_test, this.accommodationEvents, this.attentionEvents);
+      this.run = 1;
+    } else {
+      this.server.emit('testDone');
+      writeAccommodationTestToCSV(this.current_test, this.accommodationEvents, this.attentionEvents);
+      this.run = 1;
     }
   }
 }

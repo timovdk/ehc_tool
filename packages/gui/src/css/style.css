@@ -65,3 +65,32 @@ html {
 .attention-button:focus {
   background-color: #3c3c3c;
 }
+
+.acc-dir {
+  width: 189px !important;
+  height: 1020px !important;
+  background-color: #5a5a5a;
+  text-align: center;
+  display: table-cell;
+  vertical-align: middle;
+  border: 1px solid #000000;
+  box-shadow: none;
+}
+.acc-dir:hover {
+  background-color: #3c3c3c;
+}
+.acc-dir:focus {
+  background-color: #3c3c3c;
+}
+
+.acc-span {
+  line-height: 200px;
+  font-size: 200px; 
+  color: #ffffff;
+}
+
+.acc-dir-span {
+  line-height: 30px;
+  font-size: 50px;
+  color: #ffffff;
+}

@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { IAttentionButton, IButton, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
+import { IArrow, IAttentionButton, IButton, IStimulusEvent, IStimulusStart, ScreenRoles } from 'ehc-models-utils';
 import { UpdateStream } from './meiosis';
 import { states } from '.';
 
@@ -84,7 +84,11 @@ export class SocketService {
         buttons: new Array<IStimulusStart>(),
         attentionButton: {} as IAttentionButton,
         attentionTestRunning: false,
-        sendData: true,
+        sendData: false,
+        accommodationArrow: {} as IArrow,
+        attentionAccommodationTestRunning: false,
+        accommodationTestRunning: false,
+        showBars: false,
       });
     });
 
@@ -138,7 +142,7 @@ export class SocketService {
     this.socket.on('attentionTest', () => {
       let btn_1 = document.getElementById(`button-attention`);
       btn_1 ? (btn_1.style.visibility = '') : undefined;
-      us({ attentionTestRunning: true });
+      us({ testRunning: false, attentionTestRunning: true, attentionButton: {} as IAttentionButton });
     });
 
     this.socket.on('stopAttentionTest', () => {
@@ -146,6 +150,42 @@ export class SocketService {
       btn_1 ? (btn_1.style.visibility = 'hidden') : undefined;
       us({ attentionTestRunning: false, attentionButton: {} as IAttentionButton });
     });
+
+    this.socket.on('barsLocationMessage', (data: IStimulusEvent) => {
+      us({
+        accommodationArrow: {
+          location: data.stimuli === 'bars_lower' ? 'NEAR' : data.stimuli === 'bars_mid' ? 'FAR' : 'UNITY',
+        },
+        showBars: true,
+        bars: data,
+        accommodationTestRunning: false
+      });
+    });
+
+    this.socket.on('attentionAccommodationTest', () => {
+      let btn_1 = document.getElementById(`button-attention-acc`);
+      btn_1 ? (btn_1.style.visibility = '') : undefined;
+      us({
+        testRunning: false,
+        attentionTestRunning: false,
+        attentionAccommodationTestRunning: true,
+        attentionButton: {} as IAttentionButton,
+      });
+    });
+
+    this.socket.on('stopAttentionAccommodationTest', () => {
+      let btn_1 = document.getElementById(`button-attention-acc`);
+      btn_1 ? (btn_1.style.visibility = 'hidden') : undefined;
+      us({ attentionAccommodationTestRunning: false, attentionButton: {} as IAttentionButton });
+    });
+
+    this.socket.on('accommodationLocation', (data) => {
+      us({ showBars: false, accommodationTestRunning: true, accommodationArrow: { direction: data.stimuli } });
+    });
+
+    this.socket.on('testDone', () => {
+      us({accommodationTestRunning: false, accommodationArrow: { } as IArrow})
+    })
   }
 
   sendTimedButtons = (buttons: Array<IButton>) => {
@@ -154,5 +194,13 @@ export class SocketService {
 
   sendAttentionTestButtons = (button: IAttentionButton) => {
     this.socket.emit('attentionTestPressed', button);
+  };
+
+  sendAccommodationAttentionTestButtons = (button: IAttentionButton) => {
+    this.socket.emit('attentionAccommodationTestPressed', button);
+  };
+
+  sendAccommodationTest = (dir: string, arrow: IArrow, time_pressed: string) => {
+    this.socket.emit('accommodationDirectionPressed', { pressed_dir: dir, arrow: arrow, time_pressed: time_pressed });
   };
 }

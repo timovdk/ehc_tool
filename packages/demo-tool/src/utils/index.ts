@@ -1,4 +1,13 @@
-import { IAttentionButton, IAttentionTest, IButton, ILogProcessedRow, ILogRawRow, IStimulus, IStimulusStart, ITestData, status } from 'ehc-models-utils';
+import {
+  IAccommodationButton,
+  IAttentionButton,
+  IButton,
+  ILogAccRow,
+  ILogProcessedRow,
+  IStimulus,
+  IStimulusStart,
+  ITestData,
+} from 'ehc-models-utils';
 import { createWriteStream } from 'fs';
 import * as fastcsv from 'fast-csv';
 import { Row } from '@fast-csv/format';
@@ -94,32 +103,6 @@ export const getPrecision = (button: [number, number], touch: [number, number]):
   return Math.sqrt(Math.pow(touch[0] - button[0], 2) + Math.pow(touch[1] - button[1], 2));
 };
 
-export const testObjectToRawRow = (obj: Partial<ITestData>): Array<Row> => {
-  let rows: Array<Row> = [];
-  obj.stimuli.forEach((stimulus: IStimulus) => {
-    stimulus.buttons.forEach((button: IButton) => {
-      const touchPrecision = getPrecision(button.button_middle, button.touch_location);
-      rows.push({
-        participant_id: obj.participant_id,
-        button_status: button.touch_time === 'FAIL' ? 'FAIL' : button.touch_time === 'STOP' ? 'STOP' : 'OK',
-        condition: obj.condition,
-        domain: obj.domain,
-        test_start_time: obj.start_time,
-        stimulus_id: stimulus.stimulus_id,
-        stimulus_start_time: stimulus.start_time,
-        stimulus_end_time: stimulus.end_time,
-        button_id: button.button_id,
-        screen_location: button.button_screen,
-        button_centre: button.button_middle,
-        touch_location: button.touch_location,
-        touch_time: button.touch_time,
-        touch_precision: touchPrecision,
-      } as ILogRawRow);
-    });
-  });
-  return rows;
-};
-
 export const getDelta = (start: string, end: string) => {
   const d1 = new Date(start);
   const d2 = new Date(end);
@@ -128,94 +111,134 @@ export const getDelta = (start: string, end: string) => {
   return difference;
 };
 
-export const getStatus = (buttons: Array<IButton>) => {
-  let status = 'OK';
-  buttons.forEach((button: IButton) => {
-    button.touch_time === 'FAIL' ? (status = 'FAIL') : undefined;
-    button.touch_time === 'STOP' ? (status = 'STOP') : undefined;
-  });
-
-  return status;
-};
-
 export const getCalculatedFields = (buttons: Array<IButton>, start_time: string) => {
   buttons.sort((a: IButton, b: IButton) => {
     return a.touch_time < b.touch_time ? -1 : a.touch_time > b.touch_time ? 1 : 0;
   });
 
-  const buttonOrder = [
-    buttons[0].button_id,
-    buttons[1].button_id,
-    buttons[2].button_id,
-    buttons[3].button_id,
-  ] as Array<string>;
-  const buttonOrderCorrect = (buttonOrder[0] === 'A' &&
-    buttonOrder[1] === 'B' &&
-    buttonOrder[2] === 'C' &&
-    buttonOrder[3] === 'D') as boolean;
+  const touchScreens = [
+    buttons[0].button_screen,
+    buttons[1].button_screen,
+    buttons[2].button_screen,
+    buttons[3].button_screen,
+  ] as Array<string>
+
+  const touchLocations = [
+    buttons[0].button_middle,
+    buttons[1].button_middle,
+    buttons[2].button_middle,
+    buttons[3].button_middle,
+  ] as Array<[number, number]>
+
+  const touchTimes = [
+    buttons[0].touch_time,
+    buttons[1].touch_time,
+    buttons[2].touch_time,
+    buttons[3].touch_time,
+  ] as Array<string>
+
   const buttonOrderTouchPrecision = [
-    getPrecision(buttons[0].button_middle, buttons[0].touch_location),
-    getPrecision(buttons[1].button_middle, buttons[1].touch_location),
-    getPrecision(buttons[2].button_middle, buttons[2].touch_location),
-    getPrecision(buttons[3].button_middle, buttons[3].touch_location),
+    buttons[0].button_id === 'A' && buttons[0].touch_time !== 'FAIL' ? getPrecision(buttons[0].button_middle, buttons[0].touch_location) : -1,
+    buttons[1].button_id === 'B' && buttons[1].touch_time !== 'FAIL' ? getPrecision(buttons[1].button_middle, buttons[1].touch_location) : -1,
+    buttons[2].button_id === 'C' && buttons[2].touch_time !== 'FAIL' ? getPrecision(buttons[2].button_middle, buttons[2].touch_location) : -1,
+    buttons[3].button_id === 'D' && buttons[3].touch_time !== 'FAIL' ? getPrecision(buttons[3].button_middle, buttons[3].touch_location) : -1,
   ] as Array<number>;
-  const buttonOrderTouchTimeDeltas = [
-    getDelta(start_time, buttons[0].touch_time),
-    getDelta(buttons[0].touch_time, buttons[1].touch_time),
-    getDelta(buttons[1].touch_time, buttons[2].touch_time),
-    getDelta(buttons[2].touch_time, buttons[3].touch_time),
-  ];
-  const buttonStatus = getStatus(buttons);
+
+  buttons.sort((a: IButton, b: IButton) => {return a.button_id.localeCompare(b.button_id)})
+
+  const buttonScreens = [
+    buttons[0].button_screen,
+    buttons[1].button_screen,
+    buttons[2].button_screen,
+    buttons[3].button_screen,
+  ] as Array<string>
+
+  const buttonLocations = [
+    buttons[0].button_middle,
+    buttons[1].button_middle,
+    buttons[2].button_middle,
+    buttons[3].button_middle,
+  ] as Array<[number, number]>
 
   return {
-    toc: buttonOrderCorrect,
-    to: buttonOrder,
+    bs: buttonScreens,
+    bls: buttonLocations,
+    ts: touchScreens,
+    tls: touchLocations,
+    tts: touchTimes,
     tp: buttonOrderTouchPrecision,
-    ttd: buttonOrderTouchTimeDeltas,
-    st: buttonStatus,
   };
 };
 
-export const testObjectToProcessedRow = (obj: Partial<ITestData>): Array<Row> => {
+export const testObjectToProcessedRow = (obj: Partial<ITestData>, att: Array<IAttentionButton>): Array<Row> => {
   let rows: Array<Row> = [];
-  obj.stimuli.forEach((stimulus: IStimulus) => {
-    const { toc, to, tp, ttd, st } = getCalculatedFields(stimulus.buttons, stimulus.start_time);
+  obj.stimuli.forEach((stimulus: IStimulus, index: number) => {
+    const { bs, bls, ts, tls, tts, tp } = getCalculatedFields(stimulus.buttons, stimulus.start_time);
     rows.push({
+      trial_num: stimulus.stimulus_id,
       participant_id: obj.participant_id,
-      stimulus_status: st,
-      stimulus_id: stimulus.stimulus_id,
-      stimulus_duration: getDelta(stimulus.start_time, stimulus.end_time),
-      touch_order_correct: toc,
-      touch_order: to,
-      touch_precisions: tp,
-      touch_time_deltas: ttd,
+      trial_start_time: obj.start_time,
+      condition: obj.condition,
+      domain: obj.domain,
+      target_onset_time: att[index].start_time,
+      target_id: att[index].id,
+      target_response_time:	att[index].touch_time,
+      target_key_response: att[index].pressed,
+      button_onset_time: stimulus.start_time,
+      button_locations: bs,
+      button_centres: bls,
+      touch_locations: ts,
+      touch_centres: tls,
+      touch_time:	tts,
+      touch_precision: tp,
+      trial_end_time:	new Date().toISOString(),
     } as ILogProcessedRow);
   });
   return rows;
 };
 
-export const attentionToRow = (obj: IAttentionButton, start_time: string): Array<Row> => {
+export const accObjectToProcessedRow = (obj: Partial<ITestData>, acc: Array<IAccommodationButton>, att: Array<IAttentionButton>): Array<Row> => {
   let rows: Array<Row> = [];
+  rows.push({
+    id: -1,
+    start_time: att[0].start_time,
+    touch_time: att[0].touch_time,
+    location: att[0].button_screen,
+    correct: att[0].correct,    
+  } as ILogAccRow)
+  acc.forEach((btn: IAccommodationButton, index: number) => {
     rows.push({
-    correct: true, 
-    button_middle: obj.button_middle,
-    touch_location: obj.touch_location,
-    reaction_time: getDelta(start_time, obj.touch_time)
-    } as IAttentionTest);
+      id: index,
+      start_time: btn.start_time,
+      touch_time: btn.time_pressed,
+      location: btn.arrow.location,
+      correct: btn.pressed_dir === btn.arrow.direction,
+    } as ILogAccRow);
+  });
   return rows;
-}
-
-export const writeTestToCSV = (test: Partial<ITestData>) => {
-  const ws_raw = createWriteStream(`./data/raw_${test.participant_id}_${test.domain}_${test.condition}.csv`);
-  fastcsv.write(testObjectToRawRow(test), { headers: true }).pipe(ws_raw);
-
-  const ws_processed = createWriteStream(
-    `./data/processed_${test.participant_id}_${test.domain}_${test.condition}.csv`
-  );
-  fastcsv.write(testObjectToProcessedRow(test), { headers: true }).pipe(ws_processed);
 };
 
-export const writeConfirmationToCSV = (button: IAttentionButton, test: Partial<ITestData>) => {
-  const ws_attention = createWriteStream(`./data/attention_${test.participant_id}_${test.domain}_${test.condition}.csv`);
-  fastcsv.write(attentionToRow(button, test.start_time), { headers: true }).pipe(ws_attention);
-}
+export const writeTestToCSV = (test: Partial<ITestData>, attentionTest: Array<IAttentionButton>) => {
+  const ws_processed = createWriteStream(
+    `./data/coordination_${test.participant_id}_${test.domain}_${test.condition}.csv`
+  );
+  fastcsv.write(testObjectToProcessedRow(test, attentionTest), { headers: true }).pipe(ws_processed);
+};
+
+export const writeAccommodationTestToCSV = (test: Partial<ITestData>, accommodationTest: Array<IAccommodationButton>, attentionTest: Array<IAttentionButton>) => {
+  const ws_processed = createWriteStream(
+    `./data/accommodation_${test.participant_id}_${test.domain}_${test.condition}.csv`
+  );
+  fastcsv.write(accObjectToProcessedRow(test, accommodationTest, attentionTest), { headers: true }).pipe(ws_processed);
+};
+
+export const getAttentionLocation = (index: number) => {
+  const rng = seedrandom(index.toString());
+  return Math.round(rng() * 10) % 2 === 0 ? 'left' : 'right';
+};
+
+export const getBarsLocation = (index: number) => {
+  const rng = seedrandom(index.toString());
+  const num = Math.round(rng() * 10) 
+  return num % 3 === 0 ? 'bars_top' : num % 3 === 1 ? 'bars_mid' : 'bars_lower';
+};
