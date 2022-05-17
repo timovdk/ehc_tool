@@ -216,16 +216,6 @@ export class EventsGateway {
     this.server.emit('testReset');
   }
 
-  /**
-1.	Participant is sitting or kneeling down behind and at the left-hand side of the setup 
-2.	Only at the first trial: The task starts with an audio message “look at the object/symbol outside/farthest away” 
-3.	Only at the first trial: Participant looks at the object in the outside environment for 3 sec to incorporate switching focus between the far- and near visual environments
-4.	Regardless the location (outside world, or touchscreens), a virtual arrow (< or >) is presented and participants must either press the left or right arrow key (e.g., two areas on the nearest touch display), respectively. 
-5.	After the key press, the stimulus disappears and a horizontal line indicates the location of the subsequent target for 200 ms. That is, a horizontal line above indicates that the next target is presented in the outside world, a horizontal line below indicates that the next target is presented on the touch screen nearby, and a horizontal line at the center indicates that the next target appears in between (the furthest touch screen). The time between the target onset and the response must be recorded: target RT.
-6.	Subsequently, participants move their gaze towards the next location.
-7.	Steps 4-6 are repeated for 100 times (cumulating to about 6 min) (The exact number of repetitions should be determined during a pilot experiment) 
- */
-
   // Accommodation test is started
   @SubscribeMessage('startAccommodationTest')
   startAccommodationTest() {
@@ -238,9 +228,6 @@ export class EventsGateway {
       this.server.emit('playAccommodationSound', { index: this.run, attEv: attEv });
       this.block = false;
     } else {
-      //4.	Regardless the location (outside world, or touchscreens), a virtual arrow (< or >) is presented and participants must either press the left or right arrow key (e.g., two areas on the nearest touch display), respectively.
-      //5.	After the key press, the stimulus disappears and a horizontal line indicates the location of the subsequent target for 200 ms. That is, a horizontal line above indicates that the next target is presented in the outside world, a horizontal line below indicates that the next target is presented on the touch screen nearby, and a horizontal line at the center indicates that the next target appears in between (the furthest touch screen). The time between the target onset and the response must be recorded: target RT.
-      //6.	Subsequently, participants move their gaze towards the next location.
       this.block = false;
       this.triggerAccommodation();
     }
